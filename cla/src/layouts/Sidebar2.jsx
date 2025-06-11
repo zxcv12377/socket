@@ -1,6 +1,6 @@
-import VoiceChannelJoiner from "../myTest/components/VoiceChannelJoiner";
 import axios from "@/lib/axiosInstance";
 import { useEffect, useState } from "react";
+import VoiceChannelJoiner from "./../components/voice/VoiceChannelJoiner";
 
 export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectChannel }) {
   const [friends, setFriends] = useState([]);
@@ -75,13 +75,9 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
     setInviteChannelId(null);
   }
   const handleJoinVoiceChannel = async (channelId) => {
-    // stream을 socket 또는 mediasoup으로 전송할 준비
-    // STOMP 연결
-    VoiceChannelJoiner(channelId);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("마이크 스트림 확보 완료", stream);
-      VoiceChannelJoiner(channelId);
+      const result = await VoiceChannelJoiner(channelId);
+      console.log("음성 연결 성공", result);
     } catch (err) {
       console.error("마이크 접근 실패:", err);
       alert("마이크 장치를 확인해주세요.");

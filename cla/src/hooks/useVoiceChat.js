@@ -70,6 +70,5 @@ export function useVoiceChat(channelId) {
       // audioContextRef.current?.close();
     };
   }, [channelId]);
-
   return { volume };
 }
