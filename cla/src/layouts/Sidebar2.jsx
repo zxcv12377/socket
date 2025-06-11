@@ -74,17 +74,18 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
     setInviteCode("");
     setInviteChannelId(null);
   }
-
   const handleJoinVoiceChannel = async (channelId) => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
     // stream을 socket 또는 mediasoup으로 전송할 준비
-    console.log("마이크 스트림 확보 완료", stream);
     // STOMP 연결
-    VoiceChannelJoiner();
-
-    // 예: localAudioRef.current.srcObject = stream;
-    // 또는 mediaSoup send transport에 연결
+    VoiceChannelJoiner(channelId);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("마이크 스트림 확보 완료", stream);
+      VoiceChannelJoiner(channelId);
+    } catch (err) {
+      console.error("마이크 접근 실패:", err);
+      alert("마이크 장치를 확인해주세요.");
+    }
   };
 
   // --- 채널 그룹핑 ---
@@ -134,10 +135,7 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
               <li
                 key={ch.id ?? `textch-${i}`}
                 className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
-                onClick={() => {
-                  onSelectChannel?.(ch.id);
-                  handleJoinVoiceChannel(ch.id);
-                }}
+                onClick={() => onSelectChannel && onSelectChannel(ch.id)}
               >
                 <span className="text-[#8e9297] font-bold">#</span>
                 <span className="flex-1">{ch?.name || "이름없음"}</span>
@@ -183,7 +181,10 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
               <li
                 key={ch.id ?? `voicech-${i}`}
                 className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
-                onClick={() => onSelectChannel && onSelectChannel(ch.id)}
+                onClick={() => {
+                  onSelectChannel?.(ch.id);
+                  handleJoinVoiceChannel(ch.id);
+                }}
               >
                 <span>🔊</span>
                 <span className="flex-1">{ch?.name || "이름없음"}</span>

@@ -37,7 +37,8 @@ services:
     ports:
       - "5672:5672" # AMQP (애플리케이션용)
       - "15672:15672" # 웹 대시보드 (http://localhost:15672)
-      - "15674:15674"
+      - "15674:15674" # 실시간 음성채팅용 포트
+      - "61613:61613" # 실시간 채팅용 포트
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
