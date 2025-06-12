@@ -1,6 +1,6 @@
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { useUser } from "@/context/UserContext";
+import { useUserContext } from "@/context/UserContext";
 import axiosInstance from "@/lib/axiosInstance";
 import { useState, useEffect } from "react";
 
@@ -10,7 +10,7 @@ const MyPage = () => {
   const [originalNickname, setOriginalNickname] = useState("");
   const [isAvailable, setIsAvailable] = useState(null);
   const [nicknameMsg, setNicknameMsg] = useState("");
-  const { setName } = useUser();
+  const { setName } = useUserContext();
 
   // 비밀번호 변경
   const [currentPw, setCurrentPw] = useState("");

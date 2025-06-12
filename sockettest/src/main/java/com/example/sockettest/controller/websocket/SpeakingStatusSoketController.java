@@ -19,7 +19,7 @@ public class SpeakingStatusSoketController {
     private final VoiceChatLogService logService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    @MessageMapping("/voice/speaking")
+    @MessageMapping("/voice/speaking-status")
     public void updateSpeakingStatus(SpeakingStatusRequest request) {
         Member member = Member.builder().mno(request.getMemberId()).build();
         ChatRoom room = ChatRoom.builder().id(request.getChatRoomlId()).build();

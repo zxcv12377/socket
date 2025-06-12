@@ -21,4 +21,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     Optional<ChatRoom> findDmRoomBetween(Long id1, Long id2);
 
     List<ChatRoom> findByServer(Server server);
+
+    ChatRoom findByRoomKey(String roomKey);
 }

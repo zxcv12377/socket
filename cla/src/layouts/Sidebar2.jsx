@@ -1,6 +1,8 @@
 import axios from "@/lib/axiosInstance";
 import { useEffect, useState } from "react";
 import VoiceChannelJoiner from "./../components/voice/VoiceChannelJoiner";
+import { useUserContext } from "@/context/UserContext";
+import useVoiceChannelSpeaking from "../hooks/useVoiceChannelSpeaking";
 
 export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectChannel }) {
   const [friends, setFriends] = useState([]);
@@ -12,6 +14,21 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
 
   const [inviteCode, setInviteCode] = useState("");
   const [inviteChannelId, setInviteChannelId] = useState(null);
+
+  const { user } = useUserContext();
+  const [currentVoiceRoomId, setCurrentVoiceRoomId] = useState(null);
+  const [speakingUsers, setSpeakingUsers] = useState([]);
+
+  const { startSpeaking, stopSpeaking } = useVoiceChannelSpeaking({
+    roomId: currentVoiceRoomId,
+    memberId: user?.mno,
+    onSpeakingUsersChange: (data) => {
+      setSpeakingUsers((prev) => {
+        const others = prev.filter((u) => u.memberId !== data.memberId);
+        return data.speaking ? [...others, data] : others;
+      });
+    },
+  });
 
   useEffect(() => {
     if (dmMode) {
@@ -74,14 +91,22 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
     setInviteCode("");
     setInviteChannelId(null);
   }
-  const handleJoinVoiceChannel = async (channelId) => {
+  const handleJoinVoiceChannel = async (channelId, memberId) => {
     try {
-      const result = await VoiceChannelJoiner(channelId);
-      console.log("음성 연결 성공", result);
+      await VoiceChannelJoiner(channelId);
+      setCurrentVoiceRoomId(channelId); // 이게 훅에 반영됨
     } catch (err) {
       console.error("마이크 접근 실패:", err);
       alert("마이크 장치를 확인해주세요.");
     }
+    // try {
+    //   // const result = await VoiceChannelJoiner(channelId);
+    //   const result = await VoiceChannelWithSpeaking(channelId, memberId);
+    //   console.log("음성 연결 성공", result);
+    // } catch (err) {
+    //   console.error("마이크 접근 실패:", err);
+    //   alert("마이크 장치를 확인해주세요.");
+    // }
   };
 
   // --- 채널 그룹핑 ---
@@ -179,7 +204,7 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
                 className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
                 onClick={() => {
                   onSelectChannel?.(ch.id);
-                  handleJoinVoiceChannel(ch.id);
+                  handleJoinVoiceChannel(ch.id, user.mno);
                 }}
               >
                 <span>🔊</span>

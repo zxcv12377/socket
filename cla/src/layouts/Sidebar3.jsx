@@ -1,10 +1,10 @@
 import ChatRoom from "./../components/room/ChatRoom";
-import { UserContext } from "@/context/UserContext";
+import { useUserContext } from "@/context/UserContext";
 import { useContext } from "react";
 
 export default function Sidebar3({ dmMode, serverId, roomId }) {
   const token = localStorage.getItem("token");
-  const { name } = useContext(UserContext);
+  const { user } = useUserContext();
 
   if (!roomId) {
     return (
@@ -15,7 +15,7 @@ export default function Sidebar3({ dmMode, serverId, roomId }) {
   }
   return (
     <div className="flex-1 bg-[#313338] h-full">
-      <ChatRoom roomId={roomId} token={token} currentUser={{ name }} />
+      <ChatRoom roomId={roomId} token={token} currentUser={{ user }} />
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { useTheme } from "@/context/ThemeContext";
-import { useUser } from "@/context/UserContext";
+import { useUserContext } from "@/context/UserContext";
 import { motion } from "framer-motion";
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = ({ onLogout }) => {
-  const { name } = useUser();
+  const context = useUserContext();
+  const { user, loading } = context;
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
   const { dark, setDark } = useTheme();
@@ -27,7 +28,7 @@ const Navbar = ({ onLogout }) => {
         {/* 오른쪽: 메뉴 */}
         <div className="flex items-center space-x-4 text-sm">
           {/* 로그인 사용자 닉네임 표시 */}
-          {isLoggedIn && name && <span className="text-gray-500"> 닉네임: {name}</span>}
+          {isLoggedIn && user?.name && <span className="text-gray-500"> 닉네임: {user.name}</span>}
           <Link to="/posts" className="hover:underline">
             게시판
           </Link>

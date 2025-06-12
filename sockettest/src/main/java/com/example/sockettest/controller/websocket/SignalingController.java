@@ -1,0 +1,59 @@
+package com.example.sockettest.controller.websocket;
+
+import java.util.Map;
+import com.example.sockettest.security.util.JwtUtil;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+
+import com.example.sockettest.dto.SignalingMessage;
+
+@Controller
+public class SignalingController {
+
+    private final JwtUtil jwtUtil;
+
+    SignalingController(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    @MessageMapping("/voice/offer/{roomId}")
+    @SendTo("/topic/voice/offer/{roomId}")
+    public SignalingMessage offer(SignalingMessage msg) {
+        return msg;
+    }
+
+    @MessageMapping("/voice/answer/{roomId}")
+    @SendTo("/topic/voice/answer/{roomId}")
+    public SignalingMessage answer(SignalingMessage msg) {
+        return msg;
+    }
+
+    @MessageMapping("/voice/candidate/{roomId}")
+    @SendTo("/topic/voice/candidate/{roomId}")
+    public SignalingMessage candidate(SignalingMessage msg) {
+        return msg;
+    }
+
+    @MessageMapping("/voice/speaking")
+    @SendTo("/topic/voice/{roomId}/speaking")
+    public SpeakingStatusSoketController handleSpeaking(SpeakingStatusSoketController status,
+            Message<?> message) {
+        SimpMessageHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message,
+                SimpMessageHeaderAccessor.class);
+        if (accessor != null && accessor.getSessionAttributes() != null) {
+            String token = (String) accessor.getSessionAttributes().get("token");
+            if (jwtUtil.validateToken(token)) {
+                Authentication auth = jwtUtil.getAuthentication(token);
+                String email = auth.getName();
+            }
+        }
+
+        return status;
+    }
+}

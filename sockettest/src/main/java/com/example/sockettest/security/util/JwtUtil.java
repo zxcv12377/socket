@@ -3,26 +3,39 @@ package com.example.sockettest.security.util;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Date;
+
+import javax.crypto.SecretKey;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
-    private final Key key; // 서버 기동마다 달라짐
-    // private final long expiration; // 1시간
+    @Value("${jwt.secret}")
+    private String secretKeyPlain;
 
-    public JwtUtil(
-            @Value("${jwt.secret}") String secretKey) {
-        this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
-        // this.expiration = expiration;
+    private SecretKey secretKey;
+
+    @PostConstruct
+    public void init() {
+        // byte[] keyBytes = Base64.getEncoder().encode(secretKeyPlain.getBytes());
+        byte[] keyBytes = secretKeyPlain.getBytes(StandardCharsets.UTF_8);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(String username, String name) {
@@ -34,14 +47,26 @@ public class JwtUtil {
                 .claim("name", name)
                 .setIssuedAt(new Date())
                 .setExpiration(expirationDate)
-                .signWith(key)
+                .signWith(secretKey)
                 .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public String validateAndGetUsername(String token) {
         try {
             return Jwts.parserBuilder()
-                    .setSigningKey(key)
+                    .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody()
@@ -63,9 +88,28 @@ public class JwtUtil {
     // claim 파싱 메서드 추가!
     public Claims parseClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(key)
+                .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public Authentication getAuthentication(String token) {
+        Claims claims = parseClaims(token);
+        String username = claims.getSubject(); // 또는 memberId
+
+        return new UsernamePasswordAuthenticationToken(username, null, null); // 권한 필요 시 List<GrantedAuthority> 전달
+    }
+
+    public String createToken(String subject, long validityMs) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + validityMs);
+
+        return Jwts.builder()
+                .setSubject(subject)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(secretKey)
+                .compact();
     }
 }

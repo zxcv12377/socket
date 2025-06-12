@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -93,6 +94,10 @@ public class ChatRoomService {
 
         // 3. 방 삭제
         chatRoomRepository.deleteById(roomId);
+    }
+
+    public ChatRoom findByRoomKey(String roomKey) {
+        return chatRoomRepository.findByRoomKey(roomKey);
     }
 
 }

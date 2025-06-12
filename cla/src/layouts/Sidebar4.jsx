@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "@/lib/axiosInstance"; // 네 프로젝트 axios 래퍼 쓰는 경우
+import axios from "@/lib/axiosInstance"; // 프로젝트 axios 래퍼 쓰는 경우
 
 export default function Sidebar4({ serverId, selectedMemberId, onSelectMember }) {
   const [members, setMembers] = useState([]);
@@ -12,8 +12,9 @@ export default function Sidebar4({ serverId, selectedMemberId, onSelectMember })
       return;
     }
     setLoading(true);
-    axios.get(`/servers/${serverId}/members`)
-      .then(res => setMembers(res.data || []))
+    axios
+      .get(`/servers/${serverId}/members`)
+      .then((res) => setMembers(res.data || []))
       .catch(() => setMembers([]))
       .finally(() => setLoading(false));
   }, [serverId]);
@@ -29,7 +30,7 @@ export default function Sidebar4({ serverId, selectedMemberId, onSelectMember })
         <div className="flex-1 flex items-center justify-center text-zinc-500">참여자가 없습니다</div>
       ) : (
         <ul className="flex-1 overflow-y-auto px-3 py-2">
-          {members.map(m => (
+          {members.map((m) => (
             <li
               key={m.memberId || m.id}
               className={`flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 cursor-pointer ${

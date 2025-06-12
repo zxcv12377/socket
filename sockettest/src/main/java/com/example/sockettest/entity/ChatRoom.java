@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -48,4 +49,14 @@ public class ChatRoom {
     @ManyToMany
     @JoinTable(name = "dm_members", joinColumns = @JoinColumn(name = "chat_room_id"), inverseJoinColumns = @JoinColumn(name = "member_id"))
     private List<Member> members;
+
+    private String roomKey;
+
+    @PrePersist
+    public void setDefaultRoomKey() {
+        if (this.roomKey == null) {
+            this.roomKey = UUID.randomUUID().toString();
+        }
+    }
+
 }

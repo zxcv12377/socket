@@ -1,4 +1,4 @@
-package com.example.sockettest.config.Handler;
+package com.example.sockettest.Handler;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;

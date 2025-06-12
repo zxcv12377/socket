@@ -1,20 +1,21 @@
 import Navbar from "./components/ui/Navbar";
 import { ChatProvider } from "./context/ChatContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { UserContext } from "./context/UserContext";
 import Layout from "./layouts/Layout";
 import axiosInstance from "./lib/axiosInstance";
-import VoiceChannelWithSpeaking from "./myTest/components/test/VoiceChannelWithSpeaking";
 import SignupWithEmailVerification from "./myTest/components/test/emailtest/SignupWithEmailVerification";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import MyPage from "./pages/MyPage";
 import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import { useUserContext } from "@/context/UserContext";
 
 function App() {
   const [token, setToken] = useState(null);
   const [name, setName] = useState(null);
+
+  const { user, loading } = useUserContext();
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
@@ -62,18 +63,16 @@ function App() {
       {/* <div className="bg-red-500 text-white p-4">Hello</div> */}
       {/* <VoiceChannelWithSpeaking /> */}
       <ThemeProvider>
-        <UserContext.Provider value={{ name, setName }}>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<RootLayout onLogout={handleLogout} />}>
-                <Route index element={<Layout />} />
-                <Route path="/mypage" element={<MyPage />} />
-                <Route path="/register" element={<SignupWithEmailVerification />} />
-              </Route>
-              <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-            </Routes>
-          </BrowserRouter>
-        </UserContext.Provider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<RootLayout onLogout={handleLogout} />}>
+              <Route index element={<Layout />} />
+              <Route path="/mypage" element={<MyPage />} />
+              <Route path="/register" element={<SignupWithEmailVerification />} />
+            </Route>
+            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          </Routes>
+        </BrowserRouter>
       </ThemeProvider>
     </ChatProvider>
   );
