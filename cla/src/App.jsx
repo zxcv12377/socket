@@ -10,6 +10,7 @@ import MyPage from "./pages/MyPage";
 import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import { useUserContext } from "@/context/UserContext";
+import MicTest from "./myTest/components/MicTest";
 
 function App() {
   const [token, setToken] = useState(null);
@@ -75,6 +76,7 @@ function App() {
         </BrowserRouter>
       </ThemeProvider>
     </ChatProvider>
+    // <MicTest />
   );
 }
 

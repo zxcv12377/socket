@@ -26,7 +26,6 @@ export default function VoiceChatRoom({ room }) {
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">{room.name}</h2>
-
       <div className="space-y-2">
         {Object.entries(speakingUsers).map(([memberId, isSpeaking]) => (
           <div key={memberId} className="flex items-center gap-2">

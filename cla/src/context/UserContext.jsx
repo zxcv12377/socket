@@ -1,7 +1,14 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 
-const UserContext = createContext();
+export const UserContext = createContext({
+  user: null,
+  name: null,
+  setUser: () => {},
+  setName: () => {},
+  loading: true,
+});
+
 export const useUserContext = () => useContext(UserContext);
 
 export const UserProvider = ({ children }) => {
@@ -26,5 +33,3 @@ export const UserProvider = ({ children }) => {
 
   return <UserContext.Provider value={{ user, setUser, loading }}>{children}</UserContext.Provider>;
 };
-
-// export const useUserContext = () => useContext(UserContext);

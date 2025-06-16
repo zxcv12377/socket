@@ -11,6 +11,7 @@ export default function MainLayout() {
   const [selectedDM, setSelectedDM] = useState(false);
   const [selectedServerId, setSelectedServerId] = useState(null);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [speakingUsers, setSpeakingUsers] = useState([]);
 
   useEffect(() => {
     const savedServerId = localStorage.getItem("selectedServerId");
@@ -57,7 +58,12 @@ export default function MainLayout() {
       <Sidebar1 onSelectDM={handleSelectDM} onSelectServer={handleSelectServer} />
       <Sidebar2 dmMode={selectedDM} serverId={selectedServerId} onSelectChannel={handleSelectChannel} />
       <Sidebar3 dmMode={selectedDM} serverId={selectedServerId} roomId={selectedRoomId} />
-      <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
+      <Sidebar4
+        serverId={selectedServerId}
+        roomId={selectedRoomId}
+        onSelectMember={() => {}}
+        speakingUsers={speakingUsers}
+      />
       <Outlet />
     </div>
   );

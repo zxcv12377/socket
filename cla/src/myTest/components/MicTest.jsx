@@ -1,57 +1,60 @@
 import { useEffect, useRef, useState } from "react";
 
-function MicTest() {
+export default function MicTest() {
   const [volume, setVolume] = useState(0);
-  const audioContextRef = useRef(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const analyserRef = useRef(null);
+  const animationRef = useRef(null);
 
   useEffect(() => {
-    const init = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
+    let audioContext;
+    let stream;
 
-      source.connect(analyser);
-      analyser.fftSize = 256;
+    const startMic = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      analyserRef.current = analyser;
-      audioContextRef.current = audioContext;
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
 
-      // const updateVolume = () => {
-      //   analyser.getByteFrequencyData(dataArray);
-      //   const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-      //   setVolume(Math.round(avg));
-      //   requestAnimationFrame(updateVolume);
-      // };
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
 
-      // updateVolume();
+        source.connect(analyser);
+        analyserRef.current = analyser;
+
+        const detectSpeaking = () => {
+          analyser.getByteFrequencyData(dataArray);
+          const avg = dataArray.reduce((a, b) => a + b) / bufferLength;
+          setVolume(Math.round(avg));
+          setIsSpeaking(avg > 15);
+          animationRef.current = requestAnimationFrame(detectSpeaking);
+        };
+
+        detectSpeaking();
+      } catch (err) {
+        console.error("🎙️ 마이크 접근 실패", err);
+      }
     };
 
-    init();
+    startMic();
 
     return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      cancelAnimationFrame(animationRef.current);
+      stream?.getTracks().forEach((track) => track.stop());
+      audioContext?.close();
     };
   }, []);
 
   return (
-    <div>
-      🎙️ 마이크 입력 감지: <strong>{volume}</strong> / 255
-      <div style={{ width: "100%", height: "10px", background: "#ddd", marginTop: "5px" }}>
-        <div
-          style={{
-            width: `${(volume / 255) * 100}%`,
-            height: "100%",
-            background: "green",
-          }}
-        />
-      </div>
+    <div style={{ padding: 32, textAlign: "center" }}>
+      <h2>🎙️ 마이크 테스트</h2>
+      <p>
+        현재 볼륨: <strong>{volume}</strong>
+      </p>
+      <p style={{ color: isSpeaking ? "limegreen" : "gray" }}>{isSpeaking ? "🗣️ 말하는 중" : "조용함"}</p>
     </div>
   );
 }
-
-export default MicTest;

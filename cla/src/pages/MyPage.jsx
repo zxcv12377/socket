@@ -3,14 +3,16 @@ import { Input } from "../components/ui/input";
 import { useUserContext } from "@/context/UserContext";
 import axiosInstance from "@/lib/axiosInstance";
 import { useState, useEffect } from "react";
+import { useRef } from "react";
 
 const MyPage = () => {
+  const inputRef = useRef(null);
   // 닉네임 변경
   const [nickname, setNickname] = useState("");
   const [originalNickname, setOriginalNickname] = useState("");
   const [isAvailable, setIsAvailable] = useState(null);
   const [nicknameMsg, setNicknameMsg] = useState("");
-  const { setName } = useUserContext();
+  const { user, setUser } = useUserContext();
 
   // 비밀번호 변경
   const [currentPw, setCurrentPw] = useState("");
@@ -63,9 +65,15 @@ const MyPage = () => {
         localStorage.setItem("token", data.token); // 새 토큰으로 교체
       }
 
-      setOriginalNickname(nickname);
+      setOriginalNickname(data.nickname);
       setNickname(nickname);
-      setName(nickname); // UserContext에 닉네임 변경 반영
+      const newNickname = inputRef.current.value;
+      if (!newNickname) return;
+      setUser((prevUser) => ({
+        ...prevUser,
+        name: newNickname,
+      }));
+      // setName(nickname); // UserContext에 닉네임 변경 반영
       alert("닉네임이 변경되었습니다.");
     } catch (e) {
       console.log(e);
@@ -112,6 +120,7 @@ const MyPage = () => {
         <h3 className="font-semibold text-lg text-gray-900 dark:text-white">닉네임 변경</h3>
         <div className="flex gap-2">
           <Input
+            ref={inputRef}
             value={nickname}
             onChange={(e) => {
               setNickname(e.target.value);

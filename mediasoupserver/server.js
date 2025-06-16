@@ -2,8 +2,7 @@ const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const { createMediasoupWorkerAndRouter } = require("./lib/mediasoup");
-const { setupSignaling } = require("./handlers/signaling");
-
+const { setupSignaling, voiceRoomParticipants } = require("./handlers/signaling");
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
@@ -11,6 +10,17 @@ const io = socketIO(server, {
 });
 
 app.use(express.json());
+
+app.get("/api/voice-rooms/:roomId/participants", (req, res) => {
+  const { roomId } = req.params;
+  const participantsMap = voiceRoomParticipants.get(roomId);
+  if (!participantsMap) {
+    return res.json([]);
+  }
+
+  const participants = Array.from(participantsMap.values());
+  res.json(participants);
+});
 
 (async () => {
   const { worker, router } = await createMediasoupWorkerAndRouter();

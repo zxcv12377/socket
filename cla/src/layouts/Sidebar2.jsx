@@ -2,7 +2,8 @@ import axios from "@/lib/axiosInstance";
 import { useEffect, useState } from "react";
 import VoiceChannelJoiner from "./../components/voice/VoiceChannelJoiner";
 import { useUserContext } from "@/context/UserContext";
-import useVoiceChannelSpeaking from "../hooks/useVoiceChannelSpeaking";
+// import useVoiceChannelSpeaking from "../hooks/useVoiceChannelSpeaking";
+import { useVoiceChat } from "./../hooks/useVoiceChat";
 
 export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectChannel }) {
   const [friends, setFriends] = useState([]);
@@ -19,16 +20,16 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
   const [currentVoiceRoomId, setCurrentVoiceRoomId] = useState(null);
   const [speakingUsers, setSpeakingUsers] = useState([]);
 
-  const { startSpeaking, stopSpeaking } = useVoiceChannelSpeaking({
+  const { startSpeaking, stopSpeaking } = useVoiceChat({
     roomId: currentVoiceRoomId,
-    memberId: user?.mno,
-    onSpeakingUsersChange: (data) => {
-      setSpeakingUsers((prev) => {
-        const others = prev.filter((u) => u.memberId !== data.memberId);
-        return data.speaking ? [...others, data] : others;
-      });
+    member: {
+      memberId: user?.mno,
+      name: user?.name,
+      profile: user?.profile,
     },
+    onSpeakingUsersChange: setSpeakingUsers,
   });
+  useVoiceChat(currentVoiceRoomId, user);
 
   useEffect(() => {
     if (dmMode) {
@@ -91,9 +92,12 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
     setInviteCode("");
     setInviteChannelId(null);
   }
-  const handleJoinVoiceChannel = async (channelId, memberId) => {
+  const handleJoinVoiceChannel = async (channelId) => {
     try {
-      await VoiceChannelJoiner(channelId);
+      if (!channelId) {
+        console.warn("채널 ID 없음. joinRoom 생략");
+        return;
+      }
       setCurrentVoiceRoomId(channelId); // 이게 훅에 반영됨
     } catch (err) {
       console.error("마이크 접근 실패:", err);
@@ -156,7 +160,9 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
               <li
                 key={ch.id ?? `textch-${i}`}
                 className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
-                onClick={() => onSelectChannel && onSelectChannel(ch.id)}
+                onClick={() => {
+                  onSelectChannel && onSelectChannel(ch.id);
+                }}
               >
                 <span className="text-[#8e9297] font-bold">#</span>
                 <span className="flex-1">{ch?.name || "이름없음"}</span>
@@ -203,8 +209,13 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
                 key={ch.id ?? `voicech-${i}`}
                 className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
                 onClick={() => {
+                  if (!user) {
+                    alert("로그인이 필요합니다.");
+                    return;
+                  }
                   onSelectChannel?.(ch.id);
                   handleJoinVoiceChannel(ch.id, user.mno);
+                  // startSpeaking();
                 }}
               >
                 <span>🔊</span>
