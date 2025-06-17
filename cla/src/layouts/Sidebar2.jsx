@@ -95,7 +95,7 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
   const handleJoinVoiceChannel = async (channelId) => {
     try {
       if (!channelId) {
-        console.warn("채널 ID 없음. joinRoom 생략");
+        console.log("채널 ID 없음. joinRoom 생략");
         return;
       }
       setCurrentVoiceRoomId(channelId); // 이게 훅에 반영됨

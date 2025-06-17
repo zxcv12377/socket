@@ -68,6 +68,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
               // 7. 내 오디오 전송을 위한 producer 생성
               sendTransport.on("produce", ({ kind, rtpParameters }, callback) => {
                 socket.emit("produce", { kind, rtpParameters }, ({ id }) => callback({ id }));
+                console.log("여기다가도 추가 해봄");
                 console.log("🎤 오디오 트랙 등록 완료");
               });
 
@@ -141,7 +142,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
     };
     // 8. 소비자 수신 처리
     const handleNewProducer = async ({ producerId, socketId }) => {
-      console.log("🆕 새로운 producer 수신:", producerId, socketId);
+      console.log("새로운 producer 수신:", producerId, socketId);
       const device = deviceRef.current;
       if (!device) return;
       // 수신용 트랜스포트 요청
@@ -158,7 +159,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
             if (status === "ok") {
               callback();
             } else {
-              console.error("❌ connectRecvTransport 실패");
+              console.error("❌ connectRecviveTransport 실패");
               errback();
             }
           });
