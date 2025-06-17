@@ -1,15 +1,17 @@
 const { addUserToRoom, removeUserFromRoom, findUserRoom, getRoomUsers } = require("../lib/rooms");
 const { createWebRtcTransport } = require("../lib/transports");
 
-const voiceRooms = new Map(); // Map<roomId, Set<socketId>>
-const voiceRoomParticipants = new Map(); // Map<roomId, Map<socketId, memberInfo>>
-const peers = new Map();
-const transports = new Map();
-const producers = new Map(); // socketId → Map<producerId, producer>
-const consumers = new Map();
-const consumerTransports = new Map();
-const speakingState = new Map(); //Map<roomId, Map<memberId, {memberId, speaking}>>
+// 상태 저장용 맵들
+const voiceRooms = new Map(); // roomId -> Set<socketId>
+const voiceRoomParticipants = new Map(); // roomId -> Map<socketId, memberInfo>
+const peers = new Map(); // socketId -> { socket }
+const transports = new Map(); // socketId -> sendTransport
+const producers = new Map(); // socketId -> Map<producerId, producer>
+const consumers = new Map(); // socketId -> consumer
+const consumerTransports = new Map(); // socketId -> recvTransport
+const speakingState = new Map(); // roomId -> Map<memberId, { memberId, speaking }>
 
+// 사용자가 방을 나갈 시 호출
 function leaveVoiceRoom(io, socket) {
   for (const [roomId, userMap] of voiceRoomParticipants.entries()) {
     if (userMap.has(socket.id)) {
@@ -40,6 +42,7 @@ function setupSignaling(io, router) {
   io.on("connection", (socket) => {
     peers.set(socket.id, { socket });
 
+    // 말하기 상태 전송
     socket.on("speaking", ({ roomId, memberId, speaking }) => {
       if (!roomId || !memberId) return;
 
@@ -52,6 +55,7 @@ function setupSignaling(io, router) {
 
     console.log(`✅ 클라이언트 연결됨 : ${socket.id}`);
 
+    // 방 참여
     socket.on("joinRoom", ({ roomId, member }, callback) => {
       console.log(`🔔 Room Joined: ${roomId} by ${socket.id}`);
       socket.join(roomId);
@@ -68,7 +72,7 @@ function setupSignaling(io, router) {
       }
       voiceRoomParticipants.get(roomId).set(socket.id, member); // member = { memberId, name, profile }
 
-      // ✅ 2. 이미 존재하는 모든 producer에 대해 알림 보내기
+      // 기존 producer 정보를 사용자에게 전달
       console.log("� 현재 producers 목록:");
       for (const [peerId, producerMap] of producers.entries()) {
         if (peerId === socket.id) continue;
@@ -80,16 +84,6 @@ function setupSignaling(io, router) {
           });
         }
       }
-      // for (const [peerId, producerMap] of producers.entries()) {
-      //   if (peerId !== socket.id) {
-      //     for (const [producerId, producer] of producerMap.entries()) {
-      //       socket.emit("newProducer", {
-      //         producerId,
-      //         socketId: peerId,
-      //       });
-      //     }
-      //   }
-      // }
 
       // 유저 수 갱신 브로드캐스트
       const size = voiceRooms.get(roomId).size;
@@ -102,11 +96,13 @@ function setupSignaling(io, router) {
       }
     });
 
+    // 라우터 RTP capabilities 전송
     socket.on("getRtpCapabilities", (dummy, callback) => {
       console.log("🎧 getRtpCapabilities 요청 들어옴");
       callback(router.rtpCapabilities);
     });
 
+    // 송신용 트랜스포트 생성
     socket.on("createTransport", async (callback) => {
       try {
         const transport = await createWebRtcTransport(router);
@@ -122,7 +118,7 @@ function setupSignaling(io, router) {
       }
     });
 
-    // 3️⃣ 클라이언트에서 Transport 연결 시
+    // 송신용 트랜스 포트 연결 요청
     socket.on("connectTransport", async ({ dtlsParameters }, callback) => {
       const transport = transports.get(socket.id);
       if (transport) await transport.connect({ dtlsParameters });
@@ -132,7 +128,7 @@ function setupSignaling(io, router) {
         console.warn("⚠️ connectTransport: callback is not a function");
       }
     });
-    // 4️⃣ 오디오 데이터 전송 (produce)
+    // 오디오 트랙 produce 요청
     socket.on("produce", async ({ kind, rtpParameters }, callback) => {
       const transport = transports.get(socket.id);
       if (!transport) {
@@ -141,7 +137,6 @@ function setupSignaling(io, router) {
       }
       try {
         const producer = await transport.produce({ kind, rtpParameters });
-        // producers.set(socket.id, producer);
         if (!producers.has(socket.id)) {
           producers.set(socket.id, new Map());
         }
@@ -150,7 +145,8 @@ function setupSignaling(io, router) {
         console.log(`🎤 오디오 트랙 등록됨 - Producer ID: ${producer.id}`);
         callback({ id: producer.id });
 
-        // 본인 제외 처리
+        // 본인 제외 처리 + 다른 peer에게 이 producer 정보 전달
+        // 두번 사용하는 이유는 새로운 유저가 들어올 때마다 새로 추가 해줘야 하기 때문
         for (const [peerId, peer] of peers.entries()) {
           if (peerId !== socket.id) {
             peer.socket.emit("newProducer", {
@@ -170,7 +166,7 @@ function setupSignaling(io, router) {
         callback({ error: err.message });
       }
     });
-    // ✅ 수신용 transport 생성
+    // 수신용 transport 생성
     socket.on("createRecvTransport", async (callback) => {
       try {
         const recvTransport = await createWebRtcTransport(router);
@@ -185,17 +181,18 @@ function setupSignaling(io, router) {
         console.error("❌ Transport 생성 실패", err);
       }
     });
+    // 수신용 transport 연결
     socket.on("connectRecvTransport", async ({ dtlsParameters, transportId }) => {
       // const transport = transports.find((t) => t.id === transportId);
       const transport = [...consumerTransports.values()].find((t) => t.id === transportId);
       if (transport) {
         await transport.connect({ dtlsParameters });
-        console.log("이건 잘됨?");
         socket.emit("connectRecvTransportDone", "ok"); // ✅ 클라이언트에게 완료 신호
       } else {
         socket.emit("connectRecvTransportDone", "fail");
       }
     });
+    // consumer 생성 요청
     socket.on("consume", async ({ rtpCapabilities, producerSocketId, producerId }, callback) => {
       const consumerTransport = consumerTransports.get(socket.id);
       const producerMap = producers.get(producerSocketId);
@@ -238,26 +235,15 @@ function setupSignaling(io, router) {
         rtpParameters: consumer.rtpParameters,
         producerId: producer.id,
       });
-
-      // results.push({
-      //   peerId,
-      //   id: consumer.id,
-      //   kind: consumer.kind,
-      //   rtpParameters: consumer.rtpParameters,
-      //   producerId: producer.id,
-      // });
-      // for (const peerId of getRoomUsers(roomId)) {
-      // }
-
-      // callback(results);
     });
 
+    // 방 나가기
     socket.on("leaveRoom", (roomId) => {
       console.log(roomId + "번 방을 떠남");
       leaveVoiceRoom(io, socket);
     });
 
-    // 🔚 연결 해제 시 정리
+    // 연결 종료 처리
     socket.on("disconnect", () => {
       leaveVoiceRoom(io, socket);
       const consumer = consumers.get(socket.id);

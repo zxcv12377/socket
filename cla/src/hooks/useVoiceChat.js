@@ -27,7 +27,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
 
       const proceedAfterJoin = async () => {
         try {
-          // 2. 마이크 스트림 획득
+          // 2. 마이크 트랙 획득
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           console.log("🎙️ 마이크 트랙:", stream.getAudioTracks());
           const audioTrack = stream.getAudioTracks()[0];
@@ -53,7 +53,8 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
             if (sendTransportRef.current) return;
             socket.emit("createTransport", async (params) => {
               const sendTransport = device.createSendTransport(params);
-              sendTransportRef.current = sendTransport; // 이거 위치는 상관없나?
+              sendTransportRef.current = sendTransport;
+              // 6. 송신 Transport를 연결
               sendTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
                 socket.emit("connectTransport", { dtlsParameters }, (response) => {
                   if (response === "ok") {
@@ -64,12 +65,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
                   }
                 });
               });
-              // sendTransport.on("connect", ({ dtlsParameters }, callback) => {
-              //   socket.emit("connectTransport", { dtlsParameters });
-              //   console.log("연결 완료");
-              //   callback();
-              // });
-
+              // 7. 내 오디오 전송을 위한 producer 생성
               sendTransport.on("produce", ({ kind, rtpParameters }, callback) => {
                 socket.emit("produce", { kind, rtpParameters }, ({ id }) => callback({ id }));
                 console.log("🎤 오디오 트랙 등록 완료");
@@ -78,6 +74,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
               await sendTransport.produce({ track: audioTrack });
             });
           });
+          //#region 볼륨 시각화
           // 🔊 볼륨 시각화
           // const audioContext = new (window.AudioContext || window.webkitAudioContext)();
           // const analyser = audioContext.createAnalyser();
@@ -94,8 +91,9 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
           // };
           // updateVolume();
           // audioContextRef.current = audioContext;
+          //#endregion
 
-          // 7. 말하기 감지 및 emit
+          // 8. 말하기 감지 및 emit
           const checkSpeaking = () => {
             analyser.getByteFrequencyData(dataArray);
             const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
@@ -114,7 +112,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
           };
           checkSpeaking();
 
-          // 8. 다른 사용자 speaking 수신
+          // 9. 다른 사용자 speaking 수신
           socket.on("speaking-users", (list) => {
             onSpeakingUsersChange?.(list);
           });
@@ -123,7 +121,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
         }
       };
 
-      // 1. 채널 입장
+      // 1. 채널 입장 서버에 socket 등록
       socket.emit(
         "joinRoom",
         {
@@ -141,7 +139,7 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
         }
       );
     };
-    // 6. 소비자 수신 처리
+    // 8. 소비자 수신 처리
     const handleNewProducer = async ({ producerId, socketId }) => {
       console.log("🆕 새로운 producer 수신:", producerId, socketId);
       const device = deviceRef.current;
@@ -188,15 +186,14 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
               rtpParameters,
             });
             const stream = new MediaStream([consumer.track]);
-            console.log("트랙 켜짐?", consumer.track.enabled);
             const audio = new Audio();
             audio.srcObject = stream;
             audio.autoplay = true;
             audio.volume = 1.0;
-            console.log("audio volume", audio.volume);
-            console.log("🔊 consumer 생성됨", consumer);
-            console.log("🔈 stream 생성됨", stream);
-            console.log("🔎 audio element state → muted:", audio.muted, "volume:", audio.volume);
+            // console.log("audio volume", audio.volume);
+            // console.log("🔊 consumer 생성됨", consumer);
+            // console.log("🔈 stream 생성됨", stream);
+            // console.log("🔎 audio element state → muted:", audio.muted, "volume:", audio.volume);
             audio
               .play()
               .then(() => {
@@ -207,9 +204,13 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
               });
 
             // audioElementsRef.current[producerId] = audio;
+
+            // 오디오 재생 보장용 디버깅 코드
             setTimeout(() => {
               const audio = audioElementsRef.current[producerId];
               if (audio) {
+                // 오디오가 실제로 재생 가능한 상태인지 검사
+                // 모바일이나 엣지, iOS Safari는 자동 재생 정책 때문에 audio.play()가 초기에 실패할 수 있음
                 console.log("🧪 audio currentTime:", audio.currentTime);
                 console.log("🧪 audio.readyState:", audio.readyState);
                 audio.play().catch((e) => console.error("🔇 강제재생 실패:", e));
@@ -217,13 +218,6 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
             }, 1000);
             recvTransportsRef.current.push(recvTransport);
           }
-          // async ({ id, kind, rtpParameters, producerId }) => {
-          //   const consumer = await recvTransport.consume({
-          //     id,
-          //     producerId,
-          //     kind,
-          //     rtpParameters,
-          //   });
         );
       });
     };
@@ -245,15 +239,6 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
       });
 
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
-
-      // socketRef.current?.disconnect();
-      // sendTransportRef.current?.close();
-      // recvTransportsRef.current.forEach((t) => t.close());
-
-      // Object.values(audioElementsRef.current).forEach((audio) => {
-      //   audio.srcObject?.getTracks().forEach((track) => track.stop());
-      //   audio.remove();
-      // });
     };
   }, [roomId, member]);
   // return { volume };
