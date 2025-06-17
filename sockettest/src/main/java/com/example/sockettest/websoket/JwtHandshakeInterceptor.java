@@ -40,6 +40,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                 // JWT에서 추가로 닉네임 같은 부가 정보 꺼낼 수 있음
                 String name = jwtUtil.parseClaims(token).get("name", String.class);
 
+                // 여길바꾸면?
                 // 세션에 사용자 정보 저장
                 attributes.put("username", username);
                 attributes.put("nickname", name);
