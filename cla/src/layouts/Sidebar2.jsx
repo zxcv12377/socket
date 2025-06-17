@@ -103,14 +103,6 @@ export default function Sidebar2({ dmMode, serverId, onSelectFriend, onSelectCha
       console.error("마이크 접근 실패:", err);
       alert("마이크 장치를 확인해주세요.");
     }
-    // try {
-    //   // const result = await VoiceChannelJoiner(channelId);
-    //   const result = await VoiceChannelWithSpeaking(channelId, memberId);
-    //   console.log("음성 연결 성공", result);
-    // } catch (err) {
-    //   console.error("마이크 접근 실패:", err);
-    //   alert("마이크 장치를 확인해주세요.");
-    // }
   };
 
   // --- 채널 그룹핑 ---
