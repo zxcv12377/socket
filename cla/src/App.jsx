@@ -61,8 +61,6 @@ function App() {
 
   return (
     <ChatProvider>
-      {/* <div className="bg-red-500 text-white p-4">Hello</div> */}
-      {/* <VoiceChannelWithSpeaking /> */}
       <ThemeProvider>
         <BrowserRouter>
           <Routes>
@@ -76,7 +74,6 @@ function App() {
         </BrowserRouter>
       </ThemeProvider>
     </ChatProvider>
-    // <MicTest />
   );
 }
 
