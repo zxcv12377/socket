@@ -1,16 +1,13 @@
+import "@toast-ui/editor/dist/toastui-editor.css";
 import "./index.css";
-// ← 여기!
-import App from "./App.jsx";
 import React from "react";
-import { createRoot } from "react-dom/client";
-import { UserProvider } from "./context/UserContext.jsx";
+import { createRoot } from "react-dom/client"; // ← 여기!
+import App from "./App.jsx";
 
 const container = document.getElementById("root");
 const root = createRoot(container);
 root.render(
-  <React.StrictMode>
-    <UserProvider>
-      <App />
-    </UserProvider>
-  </React.StrictMode>
+  // <React.StrictMode>
+  <App />
+  // </React.StrictMode>
 );

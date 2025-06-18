@@ -2,7 +2,6 @@ package com.example.sockettest.security.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SecurityException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,51 +9,52 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.Date;
-
-import javax.crypto.SecretKey;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class JwtUtil {
     @Value("${jwt.secret}")
-    private String secretKeyPlain;
+    private String secretKey;
 
-    private SecretKey secretKey;
+    @Value("${jwt.expiration}")
+    private long validityInMilliseconds;
+
+    private Key key;
+
+    private final UserDetailsService userDetailsService;
+
+    public JwtUtil(UserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
+    }
 
     @PostConstruct
     public void init() {
-        // byte[] keyBytes = Base64.getEncoder().encode(secretKeyPlain.getBytes());
-        byte[] keyBytes = secretKeyPlain.getBytes(StandardCharsets.UTF_8);
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(String username, String name) {
-        Date expirationDate = Date.from(
-                Instant.now().plus(10, ChronoUnit.HOURS) // 토큰 유효시간 설정 -> 시,분,12시간,주,월, 다 설정가능
-        );
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + validityInMilliseconds);
         return Jwts.builder()
                 .setSubject(username)
                 .claim("name", name)
-                .setIssuedAt(new Date())
-                .setExpiration(expirationDate)
-                .signWith(secretKey)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(key)
                 .compact();
     }
 
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+                    .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token);
             return true;
@@ -65,40 +65,43 @@ public class JwtUtil {
 
     public String validateAndGetUsername(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token)
-                    .getBody()
-                    .getSubject();
-        } catch (ExpiredJwtException e) {
-            log.warn("JWT 만료: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.warn("지원되지 않는 JWT: {}", e.getMessage());
-        } catch (MalformedJwtException e) {
-            log.warn("잘못된 JWT 형식: {}", e.getMessage());
-        } catch (SecurityException e) {
-            log.warn("JWT 서명 검증 실패: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.warn("잘못된 JWT 요청: {}", e.getMessage());
+                    .getBody();
+            return claims.getSubject();
+        } catch (JwtException e) {
+            log.warn("Cannot parse JWT subject: {}", e.getMessage());
+            return null; // 토큰이 유효하지 않음
         }
-        return null; // 토큰이 유효하지 않음
     }
 
     // claim 파싱 메서드 추가!
     public Claims parseClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
 
     public Authentication getAuthentication(String token) {
-        Claims claims = parseClaims(token);
-        String username = claims.getSubject(); // 또는 memberId
+        // Claims claims = parseClaims(token);
+        String username = getUsername(token); // 또는 memberId
+        var userDetails = userDetailsService.loadUserByUsername(username);
+        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities()); // 권한 필요 시
+                                                                                                       // List<GrantedAuthority>
+                                                                                                       // 전달
+    }
 
-        return new UsernamePasswordAuthenticationToken(username, null, null); // 권한 필요 시 List<GrantedAuthority> 전달
+    public String getUsername(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 
     public String createToken(String subject, long validityMs) {
@@ -109,7 +112,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
-                .signWith(secretKey)
+                .signWith(key)
                 .compact();
     }
 }

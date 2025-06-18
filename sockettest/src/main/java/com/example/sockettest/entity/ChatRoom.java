@@ -42,7 +42,7 @@ public class ChatRoom {
 
     // 채널이 속한 서버 (N:1)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "server_id", nullable = false)
+    @JoinColumn(name = "server_id", nullable = true)
     private Server server;
 
     // DM 참여자 정보 (ex. 1:1이라면 두 명의 Member 연관)

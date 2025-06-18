@@ -2,8 +2,6 @@ package com.example.sockettest.entity;
 
 import java.time.LocalDateTime;
 
-import com.example.sockettest.entity.Member;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;

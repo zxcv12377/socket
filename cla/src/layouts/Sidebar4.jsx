@@ -5,13 +5,13 @@ export default function Sidebar4({ serverId, selectedMemberId, onSelectMember, s
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!roomId) return;
-    axios
-      .get(`/voice-rooms/${roomId}/participants`)
-      .then((res) => setMembers(res.data || []))
-      .catch(() => setMembers([]));
-  }, [roomId]);
+  // useEffect(() => {
+  //   if (!roomId) return;
+  //   axios
+  //     .get(`/voice-rooms/${roomId}/participants`)
+  //     .then((res) => setMembers(res.data || []))
+  //     .catch(() => setMembers([]));
+  // }, [roomId]);
 
   useEffect(() => {
     if (!serverId) {

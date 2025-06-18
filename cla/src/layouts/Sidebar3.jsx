@@ -1,10 +1,15 @@
-import ChatRoom from "./../components/room/ChatRoom";
-import { useUserContext } from "@/context/UserContext";
+import ChatRoom from "@/components/room/ChatRoom";
 import { useContext } from "react";
+import { UserContext } from "@/context/UserContext";
+import FriendPanel from "@/components/room/FriendPanel";
 
-export default function Sidebar3({ dmMode, serverId, roomId }) {
+export default function Sidebar3({ dmMode, serverId, roomId, friendMode, subscribe, send, currentUser }) {
   const token = localStorage.getItem("token");
-  const { user } = useUserContext();
+  const { name } = useContext(UserContext);
+
+  if (dmMode && friendMode) {
+    return <FriendPanel />;
+  }
 
   if (!roomId) {
     return (
@@ -13,9 +18,16 @@ export default function Sidebar3({ dmMode, serverId, roomId }) {
       </div>
     );
   }
+
   return (
     <div className="flex-1 bg-[#313338] h-full">
-      <ChatRoom roomId={roomId} token={token} currentUser={{ user }} />
+      <ChatRoom
+        roomId={roomId}
+        token={token}
+        currentUser={{ name: currentUser?.name || "알 수 없음" }}
+        subscribe={subscribe}
+        send={send}
+      />
     </div>
   );
 }

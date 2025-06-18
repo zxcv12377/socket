@@ -40,7 +40,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (REST API용)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/ws-voice/**", "/ws-chat/**").permitAll()
+                        // WebSocket/STOMP endpoints
+                        .requestMatchers("/ws-chat/**", "/ws-voice/**", "/app/**", "/topic/**").permitAll()
+
                         .requestMatchers("/api/members/register", "/api/members/login", "/error").permitAll() // 회원가입/로그인
                                                                                                               // 허용
                         .requestMatchers(HttpMethod.PUT, "/api/members/password/reset", "/api/members/password")

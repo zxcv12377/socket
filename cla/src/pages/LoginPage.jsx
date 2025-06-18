@@ -1,11 +1,11 @@
-import FindAccountModal from "@/components/ui/FindAccountModal";
+import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/lib/axiosInstance";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
+import { useState } from "react";
+import FindAccountModal from "@/components/ui/FindAccountModal";
 
 const LoginPage = ({ onLogin }) => {
   const { register, handleSubmit } = useForm();

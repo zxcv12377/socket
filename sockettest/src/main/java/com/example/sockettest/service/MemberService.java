@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -103,5 +104,14 @@ public class MemberService {
         return members.stream()
                 .map(MemberMapper::toDTO) // DTO로 변환
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MemberResponseDTO> searchMembers(String name, Long myMno) {
+        List<Member> found = memberRepository.findAllByName(name);
+        return found.stream()
+                .filter(m -> !m.getMno().equals(myMno))
+                .map(MemberMapper::toDTO)
+                .toList();
     }
 }

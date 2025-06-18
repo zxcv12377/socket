@@ -13,8 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.example.sockettest.security.custom.CustomUserDetailsService;
 import com.example.sockettest.security.util.JwtUtil;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +27,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final List<String> excludeUris = List.of(
+            "/api/members/register",
+            "/api/members/login",
+            "/api/members/check-nickname",
+            "/api/members/find-id",
+            "/api/auth/email/send");
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -36,35 +40,35 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         String uri = request.getRequestURI();
-        List<String> excludeUris = List.of(
-                "/api/members/register",
-                "/api/members/login",
-                "/api/members/check-nickname",
-                "/api/members/find-id",
-                "/api/auth/email/send");
+
         if (excludeUris.contains(uri)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // if (uri.equals("/api/members/login") || uri.equals("/api/members/register"))
-        // {
-        // filterChain.doFilter(request, response);
-        // return;
-        // }
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
             try {
-                String username = jwtUtil.validateAndGetUsername(token);
-                var userDetails = userDetailsService.loadUserByUsername(username);
+                if (jwtUtil.validateToken(token)) {
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    String username = jwtUtil.validateAndGetUsername(token);
+                    var userDetails = userDetailsService.loadUserByUsername(username);
+
+                    var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // UsernamePasswordAuthenticationToken authToken = new
+                    // UsernamePasswordAuthenticationToken(
+                    // userDetails, null, userDetails.getAuthorities());
+                    // authToken.setDetails(new
+                    // WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } else {
+                    log.warn("❌ Invalid JWT token for URI {}: {}", uri, token);
+                }
 
             } catch (Exception e) {
                 log.warn("❌ JWT 예외 발생: {}", e.getMessage());

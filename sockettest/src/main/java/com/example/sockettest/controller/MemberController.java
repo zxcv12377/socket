@@ -154,4 +154,11 @@ public class MemberController {
         List<MemberResponseDTO> members = memberService.getAllMembers();
         return ResponseEntity.ok(members);
     }
+
+    @GetMapping("/search")
+    public List<MemberResponseDTO> searchMembers(
+            @RequestParam String name,
+            @AuthenticationPrincipal MemberSecurityDTO principal) {
+        return memberService.searchMembers(name, principal.getMno());
+    }
 }

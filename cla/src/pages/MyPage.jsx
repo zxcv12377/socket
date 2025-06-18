@@ -1,27 +1,23 @@
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { useUserContext } from "@/context/UserContext";
-import axiosInstance from "@/lib/axiosInstance";
 import { useState, useEffect } from "react";
-import { useRef } from "react";
+import axiosInstance from "@/lib/axiosInstance";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useUserContext } from "../context/UserContext";
 
 const MyPage = () => {
-  const inputRef = useRef(null);
-  // 닉네임 변경
   const [nickname, setNickname] = useState("");
   const [originalNickname, setOriginalNickname] = useState("");
   const [isAvailable, setIsAvailable] = useState(null);
   const [nicknameMsg, setNicknameMsg] = useState("");
-  const { user, setUser } = useUserContext();
 
-  // 비밀번호 변경
+  const { user, setUser } = useUserContext(); // 수정
+
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [newPw2, setNewPw2] = useState("");
   const [pwMsg, setPwMsg] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
 
-  // 닉네임 불러오기
   useEffect(() => {
     axiosInstance.get("/members/me").then((res) => {
       setNickname(res.data.nickname || "");
@@ -29,7 +25,6 @@ const MyPage = () => {
     });
   }, []);
 
-  // 닉네임 중복확인
   const checkNickname = async () => {
     if (!nickname) return;
     try {
@@ -53,27 +48,28 @@ const MyPage = () => {
     }
   };
 
-  // 닉네임 저장
   const handleSaveNickname = async () => {
     if (!isAvailable) return alert("닉네임 중복 확인이 필요합니다.");
 
     try {
-      const res = await axiosInstance.put("/members/nickname", { name: nickname }); // 서버는 { name: 새닉네임 } 형태 받음
+      const res = await axiosInstance.put("/members/nickname", {
+        name: nickname,
+      });
       const data = res.data;
 
       if (data.token) {
-        localStorage.setItem("token", data.token); // 새 토큰으로 교체
+        localStorage.setItem("token", data.token);
       }
 
-      setOriginalNickname(data.nickname);
+      setOriginalNickname(nickname);
       setNickname(nickname);
-      const newNickname = inputRef.current.value;
-      if (!newNickname) return;
-      setUser((prevUser) => ({
-        ...prevUser,
-        name: newNickname,
+
+      // UserContext 업데이트
+      setUser((prev) => ({
+        ...prev,
+        name: nickname,
       }));
-      // setName(nickname); // UserContext에 닉네임 변경 반영
+
       alert("닉네임이 변경되었습니다.");
     } catch (e) {
       console.log(e);
@@ -81,7 +77,6 @@ const MyPage = () => {
     }
   };
 
-  // 비밀번호 변경
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPwMsg("");
@@ -120,7 +115,6 @@ const MyPage = () => {
         <h3 className="font-semibold text-lg text-gray-900 dark:text-white">닉네임 변경</h3>
         <div className="flex gap-2">
           <Input
-            ref={inputRef}
             value={nickname}
             onChange={(e) => {
               setNickname(e.target.value);
