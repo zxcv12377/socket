@@ -1,5 +1,6 @@
 package com.example.sockettest.controller;
 
+import java.security.Principal;
 import java.util.Map;
 
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -63,7 +64,12 @@ public class ChatWebSocketController {
             accessor.setUser(auth);
             accessor.getSessionAttributes().put("username", auth.getName());
         }
+    }
 
+    // 소켓 유지용 핑 엔드(단방향)
+    @MessageMapping("/ping")
+    public void handlePing(Principal principal) {
+        log.debug("📡 Ping received from {}", principal.getName());
     }
 
 }

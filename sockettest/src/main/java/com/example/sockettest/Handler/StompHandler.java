@@ -13,7 +13,9 @@ import org.springframework.stereotype.Component;
 import com.example.sockettest.security.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 @Component
 @RequiredArgsConstructor
 public class StompHandler implements ChannelInterceptor {
@@ -26,12 +28,24 @@ public class StompHandler implements ChannelInterceptor {
 
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String token = accessor.getFirstNativeHeader("Authorization");
+            log.warn("💡 STOMP Authorization Header: {}", token);
             if (token != null && token.startsWith("Bearer ")) {
                 String jwt = token.substring(7);
+                log.warn("💡 JWT to validate: {}", jwt);
                 if (jwtUtil.validateToken(jwt)) {
                     Authentication auth = jwtUtil.getAuthentication(jwt);
                     SecurityContextHolder.getContext().setAuthentication(auth);
+
+                    String username = jwtUtil.getUsername(jwt);
+                    String nickname = jwtUtil.parseClaims(jwt).get("name", String.class);
+
+                    accessor.setUser(auth);
+                    accessor.getSessionAttributes().put("username", username);
+                    accessor.getSessionAttributes().put("nickname", nickname);
+
+                    log.info("✅ STOMP CONNECT - 사용자 인증 성공: {}", username);
                 } else {
+                    log.warn("❌ STOMP CONNECT - JWT 유효성 실패");
                     throw new IllegalArgumentException("Invalid JWT Token");
                 }
             }

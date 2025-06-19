@@ -1,45 +1,75 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import SockJS from "sockjs-client";
+// ✅ src/hooks/useWebSocket.js
+import { useRef, useState, useCallback, useEffect } from "react";
 import Stomp from "stompjs";
 
 export const useWebSocket = (token, onConnect) => {
   const stompRef = useRef(null);
   const [connected, setConnected] = useState(false);
+  const connectedOnce = useRef(false);
+  const tokenRef = useRef(token);
 
-  const connect = useCallback(() => {
-    if (!token) return;
-
-    // ✅ 중복 연결 방지
-    if (stompRef.current && stompRef.current.connected) {
-      console.log("⚠️ WebSocket already connected");
-      return;
-    }
-
-    const socket = new SockJS("http://localhost:8080/ws-chat");
-    const client = Stomp.over(socket);
-    client.debug = () => {};
-
-    client.connect(
-      { Authorization: "Bearer " + localStorage.getItem("token") },
-      () => {
-        stompRef.current = client;
-        setConnected(true);
-        console.log("✅ WebSocket connected");
-        onConnect?.();
-      },
-      (err) => {
-        console.error("❌ WebSocket connection error:", err);
-        setConnected(false);
-      }
-    );
+  useEffect(() => {
+    tokenRef.current = token; // ✅ 항상 최신 토큰 유지
   }, [token]);
+
+  const connect = useCallback(
+    (tokenArg, callback) => {
+      const authToken = tokenArg || token;
+      if (!authToken) return;
+
+      if (stompRef.current && stompRef.current.connected) {
+        console.log("⚠️ WebSocket already connected");
+        return;
+      }
+
+      if (connectedOnce.current) {
+        console.log("⚠️ connect() already called once – skipping");
+        return;
+      }
+
+      connectedOnce.current = true;
+
+      const socket = new WebSocket("ws://localhost:8080/ws-chat");
+      const client = Stomp.over(socket);
+      client.debug = () => {};
+
+      client.connect(
+        { Authorization: "Bearer " + authToken },
+        () => {
+          stompRef.current = client;
+          setConnected(true);
+          console.log("✅ WebSocket connected");
+          onConnect?.();
+          callback?.();
+        },
+        (err) => {
+          console.error("❌ 백그라운드 사용으로 연결 끊김", err);
+          setConnected(false);
+          connectedOnce.current = false;
+        }
+      );
+    },
+    [onConnect]
+  );
+
+  useEffect(() => {
+    if (!connected && tokenRef.current) {
+      const timeout = setTimeout(() => {
+        console.warn("WebSocket 재연결 시도");
+        connect(tokenRef.current);
+      }, 3000); // 3초마다 재연결 시도
+
+      return () => clearTimeout(timeout);
+    }
+  }, [connected, connect]);
 
   const disconnect = useCallback(() => {
     if (stompRef.current && stompRef.current.connected) {
       stompRef.current.disconnect(() => {
-        console.log("🔌 WebSocket disconnected");
+        console.log("🔌 WebSocket 연결 종료 됨");
         setConnected(false);
         stompRef.current = null;
+        connectedOnce.current = false;
       });
     }
   }, []);
@@ -79,16 +109,11 @@ export const useWebSocket = (token, onConnect) => {
     [connected]
   );
 
-  useEffect(() => {
-    if (token) connect();
-    return () => disconnect(); // cleanup on unmount
-  }, [token, connect, disconnect]);
-
   return {
     connected,
     subscribe,
     send,
     connect,
-    disconnect, // 👉 외부에서 로그아웃 시 호출용
+    disconnect,
   };
 };

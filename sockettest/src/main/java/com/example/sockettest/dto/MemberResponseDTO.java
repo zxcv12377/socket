@@ -11,5 +11,5 @@ public class MemberResponseDTO {
     private Long mno;
     private String username;
     private String name;
-
+    private Long memberId;
 }

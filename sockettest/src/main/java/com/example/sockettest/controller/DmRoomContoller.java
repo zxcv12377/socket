@@ -19,7 +19,9 @@ import com.example.sockettest.mapper.MemberMapper;
 import com.example.sockettest.service.DmRoomService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 @RestController
 @RequestMapping("/api/dm")
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class DmRoomContoller {
     // 1:1 DM방 생성 또는 조회
     @PostMapping("/room")
     public ChatRoomResponseDTO createOrGetDmRoom(@RequestBody DmRoomRequestDTO request) {
+        log.info("📦 DM 요청 도착 - myId: {}, friendId: {}", request.getMyId(), request.getFriendId());
         ChatRoom room = dmRoomService.getOrCreateDmRoom(request.getMyId(), request.getFriendId());
         return ChatRoomResponseDTO.from(room);
     }

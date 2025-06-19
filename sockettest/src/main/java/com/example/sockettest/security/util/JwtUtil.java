@@ -12,6 +12,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
+import com.example.sockettest.security.custom.CustomUserDetailsService;
+
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
@@ -27,10 +29,10 @@ public class JwtUtil {
 
     private Key key;
 
-    private final UserDetailsService userDetailsService;
+    private final CustomUserDetailsService customUserDetailsService;
 
-    public JwtUtil(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
+    public JwtUtil(CustomUserDetailsService customUserDetailsService) {
+        this.customUserDetailsService = customUserDetailsService;
     }
 
     @PostConstruct
@@ -59,6 +61,7 @@ public class JwtUtil {
                     .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            log.warn("❌ JWT 검증 실패 원인: {}", e.getMessage());
             return false;
         }
     }
@@ -89,7 +92,7 @@ public class JwtUtil {
     public Authentication getAuthentication(String token) {
         // Claims claims = parseClaims(token);
         String username = getUsername(token); // 또는 memberId
-        var userDetails = userDetailsService.loadUserByUsername(username);
+        var userDetails = customUserDetailsService.loadUserByUsername(username);
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities()); // 권한 필요 시
                                                                                                        // List<GrantedAuthority>
                                                                                                        // 전달

@@ -1,7 +1,7 @@
 import { useState, createContext, useContext, useReducer, useEffect } from "react";
-import { useWebSocket } from "../hooks/useWebSocket";
 import axiosInstance from "@/lib/axiosInstance";
 import { useUserContext } from "@/context/UserContext";
+import { usePing } from "@/hooks/usePing";
 
 const RealtimeContext = createContext();
 
@@ -42,6 +42,7 @@ export function RealtimeProvider({ children, socket }) {
   const token = user?.token;
 
   const { connected, subscribe, connect, disconnect } = socket;
+  usePing();
 
   useEffect(() => {
     if (token) {

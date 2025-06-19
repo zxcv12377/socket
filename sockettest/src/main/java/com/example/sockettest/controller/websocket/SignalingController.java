@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
 import com.example.sockettest.dto.SignalingMessage;
+import com.example.sockettest.dto.voiceChat.SpeakingStatusRequest;
 
 @Controller
 public class SignalingController {
@@ -42,7 +43,7 @@ public class SignalingController {
 
     @MessageMapping("/voice/speaking")
     @SendTo("/topic/voice/{roomId}/speaking")
-    public SpeakingStatusSoketController handleSpeaking(SpeakingStatusSoketController status,
+    public SpeakingStatusRequest handleSpeaking(SpeakingStatusRequest status,
             Message<?> message) {
         SimpMessageHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message,
                 SimpMessageHeaderAccessor.class);

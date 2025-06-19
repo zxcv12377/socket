@@ -21,6 +21,7 @@ public class MemberMapper {
     public static MemberResponseDTO toDTO(Member member) {
         return MemberResponseDTO.builder()
                 .mno(member.getMno())
+                .memberId(member.getMno())
                 .username(member.getUsername())
                 .name(member.getName())
                 .build();

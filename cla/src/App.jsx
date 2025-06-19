@@ -24,7 +24,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   const ws = useWebSocket(token); // ✅ 단일 생성
-  console.log("🧩 WebSocket Hook Created");
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUserRaw = localStorage.getItem("user");
@@ -75,7 +74,6 @@ function App() {
         <ThemeProvider>
           <UserContext.Provider value={{ user, setUser }}>
             <RealtimeProvider socket={ws}>
-              {" "}
               {/* ✅ ws 주입 */}
               <BrowserRouter>
                 <Routes>

@@ -60,11 +60,4 @@ public class ChatRoomController {
         chatRoomService.deleteRoom(roomId, member.getMno());
         return ResponseEntity.noContent().build();
     }
-
-    // roomKey를 통해서 ChatRoom찾기
-    @GetMapping("/key/{roomKey}")
-    public ChatRoom findByRoomKey(@PathVariable String roomKey) {
-        return chatRoomService.findByRoomKey(roomKey);
-    }
-
 }

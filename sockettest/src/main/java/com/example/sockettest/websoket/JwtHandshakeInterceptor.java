@@ -70,6 +70,10 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             attributes.put("nickname", nickname);
             attributes.put("token", token);
 
+            log.info("WebSocket Handshake 요청 URI: {}", request.getURI());
+            log.info("추출된 토큰: {}", token);
+            log.info("토큰 유효 여부: {}", jwtUtil.validateToken(token));
+
             log.info("WebSocket 연결 성공 - username: {}, nickname: {}", username, nickname);
             return true;
         } catch (Exception e) {

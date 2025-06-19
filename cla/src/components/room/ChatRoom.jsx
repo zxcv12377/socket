@@ -114,15 +114,14 @@
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 
-export default function ChatRoom({ roomId, currentUser, subscribe, send }) {
+export default function ChatRoom({ roomId, subscribe, send, connected }) {
   const [messageMap, setMessageMap] = useState({});
   const [input, setInput] = useState("");
   const messages = messageMap[roomId] || [];
 
   // 메시지 로딩
   useEffect(() => {
-    if (!roomId) return;
-    if (messageMap[roomId]) return;
+    if (!roomId || messageMap[roomId]) return;
 
     axios
       .get(`/chat/${roomId}`)
@@ -142,7 +141,7 @@ export default function ChatRoom({ roomId, currentUser, subscribe, send }) {
 
   // 구독
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !connected) return;
     const sub = subscribe(`/topic/chatroom.${roomId}`, (payload) => {
       setMessageMap((prev) => ({
         ...prev,
@@ -152,10 +151,14 @@ export default function ChatRoom({ roomId, currentUser, subscribe, send }) {
     return () => {
       sub?.unsubscribe?.();
     };
-  }, [roomId, subscribe]);
+  }, [roomId, subscribe, connected]);
 
   function sendMessage() {
     if (!input.trim()) return;
+    if (!connected) {
+      console.warn("❌ WebSocket not connected. 메시지 전송 실패");
+      return;
+    }
     send(`/app/chat.send/${roomId}`, {
       message: input,
     });

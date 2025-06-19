@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 @Configuration
 public class RabbitMQConfig {
+    // ==== Presence ====
     public static final String PRESENCE_EXCHANGE = "presence.fanout";
     public static final String PRESENCE_QUEUE = "presence.queue";
 
@@ -34,6 +35,26 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(presenceQueue).to(presenceExchange);
     }
 
+    // ==== Friend ====
+    public static final String FRIEND_EVENT_EXCHANGE = "friend.event.exchange";
+    public static final String FRIEND_EVENT_QUEUE = "friend.event.queue";
+
+    @Bean
+    public FanoutExchange friendEventExchange() {
+        return new FanoutExchange(FRIEND_EVENT_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue friendEventQueue() {
+        return QueueBuilder.durable(FRIEND_EVENT_QUEUE).build();
+    }
+
+    @Bean
+    public Binding friendEventBinding(Queue friendEventQueue, FanoutExchange friendEventExchange) {
+        return BindingBuilder.bind(friendEventQueue).to(friendEventExchange);
+    }
+
+    // 공통
     @Bean
     public Jackson2JsonMessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();

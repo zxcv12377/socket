@@ -1,31 +1,45 @@
 package com.example.sockettest.config;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.web.socket.config.annotation.*;
 
 import com.example.sockettest.Handler.StompHandler;
+import com.example.sockettest.entity.Member;
+import com.example.sockettest.repository.MemberRepository;
+import com.example.sockettest.security.util.JwtUtil;
 import com.example.sockettest.websoket.JwtHandshakeInterceptor;
+import com.example.sockettest.websoket.StompPrincipal;
 
-import lombok.RequiredArgsConstructor;
-
+@Slf4j
 @EnableWebSocketMessageBroker
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private final JwtUtil jwtUtil;
+
     private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
     private final StompHandler stompHandler;
+    private final MemberRepository memberRepository;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-chat")
-                .setAllowedOriginPatterns("*")
-                .addInterceptors(jwtHandshakeInterceptor) // JWT 인증 인터셉터
-                .withSockJS();
+                .setAllowedOriginPatterns("*");
+        // .addInterceptors(jwtHandshakeInterceptor); // JWT 인증 인터셉터
+        // .withSockJS();
 
         registry.addEndpoint("/ws-voice")
                 .setAllowedOriginPatterns("*")
@@ -36,6 +50,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(stompHandler);
+        registration.interceptors(jwtChannelInterceptor());
     }
 
     @Override
@@ -48,5 +63,50 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setClientPasscode("guest"); // Redis나 RabbitMQ 브로커 계정
 
         registry.setApplicationDestinationPrefixes("/app"); // 클라이언트 전송 prefix
+        registry.setUserDestinationPrefix("/user");
     }
+
+    @Bean
+    public ChannelInterceptor jwtChannelInterceptor() {
+        return new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                var accessor = MessageHeaderAccessor
+                        .getAccessor(message, StompHeaderAccessor.class);
+
+                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    try {
+                        accessor.setLeaveMutable(true);
+
+                        String bearer = accessor.getFirstNativeHeader("Authorization");
+                        if (bearer == null || !bearer.startsWith("Bearer ")) {
+                            throw new IllegalArgumentException("Missing or invalid Authorization header");
+                        }
+                        log.info("Authorization Header: {}", bearer);
+
+                        String token = bearer.substring(7);
+                        if (!jwtUtil.validateToken(token)) {
+                            throw new IllegalArgumentException("Invalid JWT token");
+                        }
+                        String username = jwtUtil.validateAndGetUsername(token);
+                        String sessionId = accessor.getSessionId();
+
+                        accessor.setUser(new StompPrincipal(username, sessionId));
+                        accessor.getSessionAttributes().put("username", username);
+                        accessor.getSessionAttributes().put("nickname",
+                                memberRepository.findByUsername(username)
+                                        .map(Member::getName)
+                                        .orElse("알 수 없음"));
+
+                    } catch (Exception e) {
+                        log.error("❌ STOMP CONNECT 인증 실패: {}", e.getMessage(), e);
+                        throw e;
+                    }
+                }
+
+                return message;
+            }
+        };
+    }
+
 }

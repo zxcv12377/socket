@@ -68,7 +68,6 @@ export function useVoiceChat(roomId, member, onSpeakingUsersChange) {
               // 7. 내 오디오 전송을 위한 producer 생성
               sendTransport.on("produce", ({ kind, rtpParameters }, callback) => {
                 socket.emit("produce", { kind, rtpParameters }, ({ id }) => callback({ id }));
-                console.log("여기다가도 추가 해봄");
                 console.log("🎤 오디오 트랙 등록 완료");
               });
 

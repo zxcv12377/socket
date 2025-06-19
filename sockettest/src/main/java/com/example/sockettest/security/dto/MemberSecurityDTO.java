@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
 
@@ -13,7 +14,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MemberSecurityDTO implements UserDetails {
+public class MemberSecurityDTO implements UserDetails, Principal {
     private Long mno;
     private String username; // 이메일
     private String password;
@@ -49,6 +50,11 @@ public class MemberSecurityDTO implements UserDetails {
     public String getUsername() {
 
         return username;
+    }
+
+    @Override
+    public String getName() {
+        return name; // 또는 name
     }
 
     public static MemberSecurityDTO from(Member member) {

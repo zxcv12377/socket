@@ -20,6 +20,9 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
     networks:
       - app-network
+    depends_on:
+      - redis
+      - rabbitmq
 
   mediasoup:
     build:
@@ -51,6 +54,14 @@ services:
         rabbitmq-plugins enable --offline rabbitmq_web_stomp &&
         rabbitmq-server
       "
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
 
 volumes:
   rabbitmq-data:

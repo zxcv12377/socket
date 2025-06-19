@@ -3,6 +3,7 @@ package com.example.sockettest.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,9 +14,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class ChatRoom {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "chatroom_seq_gen")
+    @SequenceGenerator(name = "chatroom_seq_gen", sequenceName = "chatroom_seq", allocationSize = 1)
     private Long id;
 
     @Column(unique = true, nullable = false, length = 100)
@@ -46,9 +47,9 @@ public class ChatRoom {
     private Server server;
 
     // DM 참여자 정보 (ex. 1:1이라면 두 명의 Member 연관)
-    @ManyToMany
-    @JoinTable(name = "dm_members", joinColumns = @JoinColumn(name = "chat_room_id"), inverseJoinColumns = @JoinColumn(name = "member_id"))
-    private List<Member> members;
+    @Builder.Default
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DmMember> dmMemberships = new ArrayList<>();
 
     private String roomKey;
 

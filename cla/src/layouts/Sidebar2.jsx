@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useUserContext } from "@/context/UserContext";
 import { useVoiceChat } from "./../hooks/useVoiceChat";
 
-export default function Sidebar2({ dmMode, serverId, onSelectFriendPanel, onSelectDMRomm, onSelectChannel }) {
+export default function Sidebar2({ dmMode, serverId, onSelectFriendPanel, onSelectDMRoom, onSelectChannel }) {
   const { user } = useUserContext();
-  const currentUserId = user?.id;
+  const currentUserId = user?.mno;
 
   const [friends, setFriends] = useState([]);
   const [channels, setChannels] = useState([]);
